@@ -849,6 +849,19 @@
     let cash = Math.max(0, initialCash);
     cash += loanAmount;
     let lots = [];
+    // ACHAT INITIAL AVEC CASH (cash initial + crédit)
+if (cash > 0) {
+  const sharePriceNow = getSharePriceForYear(startYear); // adapte si tu as déjà une fonction
+  const canFraction = (fractional === "yes");
+
+  let qty = canFraction ? (cash / sharePriceNow) : Math.floor(cash / sharePriceNow);
+
+  if (qty > 0) {
+    lots.push({ qty, price: sharePriceNow, year: startYear }); // adapte les champs si besoin
+    cash -= qty * sharePriceNow;
+  }
+}
+
 
     let remaining = Math.max(0, loanAmount);
     const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
