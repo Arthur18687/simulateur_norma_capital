@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Norma Capital – Simulateur</title>
+
+  <style>
+    :root{
+      --bg: #042E34;
+      --bg2:#053941;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.09);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --good:#66f2c2;
+      --warn:#ffd58a;
+      --bad:#ff9aa5;
+      --accent:#5fe3ff;
+      --shadow: 0 14px 40px rgba(0,0,0,.35);
+      --r: 16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 15% 0%, rgba(95,227,255,.12), transparent 55%),
+                  radial-gradient(900px 600px at 85% 10%, rgba(102,242,194,.10), transparent 55%),
+                  linear-gradient(180deg, var(--bg), #031f23 60%, #02171a);
+      color:var(--text);
+    }
+    header{
+      padding: 18px 16px 10px;
+      position: sticky; top:0;
+      background: linear-gradient(180deg, rgba(4,46,52,.92), rgba(4,46,52,.55));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--stroke);
+      z-index: 5;
+    }
+    .wrap{max-width: 1200px; margin:0 auto;}
+    .titleRow{
+      display:flex; gap:12px; align-items:center; justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .brand{display:flex; flex-direction:column; gap:2px;}
+    h1{font-size: 18px; margin:0; letter-spacing:.3px}
+    .sub{font-size: 12px; color:var(--muted)}
+    .toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .pill{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      padding:8px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      display:flex; gap:8px; align-items:center;
+    }
+    .pill input[type="checkbox"]{transform: translateY(1px)}
+    main{padding: 14px 16px 30px;}
+    .grid{
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap: 14px;
+      align-items:start;
+    }
+    @media (max-width: 980px){
+      .grid{grid-template-columns: 1fr;}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.05));
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card h2{
+      font-size: 13px;
+      margin:0;
+      padding: 12px 12px;
+      border-bottom: 1px solid var(--stroke);
+      color: rgba(255,255,255,.88);
+      letter-spacing:.2px;
+    }
+    .card .body{padding: 12px;}
+
+    label{font-size: 12px; color: var(--muted); display:block; margin-bottom:6px;}
+    input[type="number"], select{
+      width: 100%;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      outline:none;
+    }
+    input[type="number"]:focus, select:focus{
+      border-color: rgba(95,227,255,.55);
+      box-shadow: 0 0 0 3px rgba(95,227,255,.12);
+    }
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;}
+    .row3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:10px;}
+    .btnRow{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px;}
+    button{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.07);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+      font-weight: 600;
+      letter-spacing:.2px;
+    }
+    button:hover{background: rgba(255,255,255,.10); border-color: rgba(95,227,255,.45);}
+    button:active{transform: translateY(1px);}
+
+    .tabs{
+      display:flex; gap:8px; padding: 10px 10px 0; flex-wrap:wrap;
+      border-bottom: 1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+    }
+    .tab{
+      padding: 9px 10px;
+      border-radius: 12px 12px 0 0;
+      border: 1px solid transparent;
+      color: rgba(255,255,255,.80);
+      cursor:pointer;
+      font-size: 12px;
+      user-select:none;
+    }
+    .tab.active{
+      background: rgba(255,255,255,.08);
+      border-color: var(--stroke);
+      color: var(--text);
+    }
+    .tabContent{display:none;}
+    .tabContent.active{display:block;}
+
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 12px;
+    }
+    @media (max-width: 680px){
+      .kpis{grid-template-columns: 1fr;}
+    }
+    .kpi{
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      background: rgba(0,0,0,.14);
+    }
+    .kpi .t{font-size: 12px; color: var(--muted); margin-bottom:6px;}
+    .kpi .v{font-size: 20px; font-weight: 800; letter-spacing:.2px;}
+    .kpi .s{font-size: 12px; color: rgba(255,255,255,.72); margin-top:6px; line-height:1.25;}
+    .good{color: var(--good)}
+    .accent{color: var(--accent)}
+    .muted{color: var(--muted)}
+
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      overflow:hidden;
+      border-radius: 14px;
+    }
+    th, td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      text-align:right;
+      white-space:nowrap;
+    }
+    th:first-child, td:first-child{text-align:left;}
+    thead th{
+      color: rgba(255,255,255,.78);
+      background: rgba(255,255,255,.05);
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    tbody tr:hover{background: rgba(255,255,255,.03);}
+    .note{
+      font-size: 12px;
+      color: rgba(255,255,255,.68);
+      line-height: 1.35;
+      padding: 10px 12px 0;
+    }
+
+    .yearGrid{display:grid; grid-template-columns: 1fr; gap: 10px;}
+    .yearCard{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .yearCard .head{
+      display:flex; justify-content:space-between; align-items:center; gap:8px;
+      margin-bottom:8px;
+    }
+    .yearCard .head b{font-size:12px}
+    .small{font-size:11px; color: rgba(255,255,255,.70)}
+    .yearInputs{display:grid; grid-template-columns: 1fr 1fr; gap:10px;}
+    .badge{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.82);
+    }
+    .rightSide{display:grid; grid-template-columns: 1fr; gap: 14px;}
+
+    .split{display:grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px;}
+    @media (max-width: 980px){ .split{grid-template-columns: 1fr;} }
+    .block{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .block h3{
+      margin:0 0 8px;
+      font-size: 12px;
+      color: rgba(255,255,255,.86);
+      letter-spacing:.2px;
+    }
+    .lines{display:grid; gap:8px;}
+    .line{
+      display:flex; justify-content:space-between; gap:10px;
+      font-size: 12px;
+      padding: 8px 10px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius: 12px;
+      background: rgba(255,255,255,.03);
+    }
+    .line span:first-child{color: rgba(255,255,255,.74)}
+    .line b{font-size: 13px}
+    .foot{
+      padding: 0 12px 12px;
+      font-size: 11px;
+      color: rgba(255,255,255,.62);
+      line-height: 1.35;
+    }
+
+    /* Charts */
+    .charts{
+      padding: 0 12px 12px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .chartCard{
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.12);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .chartTitle{
+      font-size: 12px;
+      color: rgba(255,255,255,.78);
+      margin: 0 0 8px;
+    }
+    canvas{
+      width: 100%;
+      display:block;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+    }
+
+    /* Crédit */
+    .creditBox{display:none;}
+    .creditBox.show{display:block;}
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="wrap titleRow">
+    <div class="brand">
+      <h1>Norma Capital – Simulateur</h1>
+      <div class="sub">Bien placé pour investir</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="pill" title="Si ON, les dividendes achètent des parts. Si OFF, les dividendes restent en cash.">
+        <input id="reinvestToggle" type="checkbox" checked />
+        <span>Réinvestissement</span>
+        <span id="reinvestState" class="badge">ON</span>
+      </div>
+      <div class="pill" title="Les parts n'entrent en jouissance qu'après ce délai.">
+        <span class="muted">Délai jouissance (mois)</span>
+        <input id="jouissanceDelay" type="number" min="0" step="1" value="6" style="width:90px; padding:6px 8px; border-radius:10px;" />
+      </div>
+      <button id="runBtn">Calculer</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap grid">
+
+    <!-- LEFT: Inputs -->
+    <section class="card">
+      <h2>Paramètres</h2>
+      <div class="body">
+        <div class="row">
+          <div>
+            <label>Durée (années)</label>
+            <input id="years" type="number" min="1" step="1" value="10" />
+          </div>
+          <div>
+            <label>Capital initial (€)</label>
+            <input id="initial" type="number" min="0" step="100" value="10000" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Virement mensuel (€)</label>
+            <input id="monthly" type="number" min="0" step="50" value="300" />
+          </div>
+        </div>
+
+        <div class="row3">
+          <div>
+            <label>Année de départ</label>
+            <input id="startYear" type="number" min="1900" step="1" value="2026" />
+          </div>
+          <div>
+            <label>Arrondi parts</label>
+            <select id="fractional">
+              <option value="yes">Parts fractionnaires (autorisé)</option>
+              <option value="no">Parts entières uniquement</option>
+            </select>
+          </div>
+          <div>
+            <label>Cash initial (€)</label>
+            <input id="initialCash" type="number" min="0" step="50" value="0" />
+          </div>
+        </div>
+
+        <!-- Crédit -->
+        <div class="pill" style="margin: 2px 0 10px;" title="Active l'option crédit. Si OFF, le simulateur reste exactement identique.">
+          <input id="loanToggle" type="checkbox" />
+          <span>Acheter à crédit</span>
+          <span id="loanState" class="badge">OFF</span>
+        </div>
+
+        <div id="creditBox" class="creditBox">
+          <div class="row3">
+            <div>
+              <label>Montant du crédit (€)</label>
+              <input id="loanAmount" type="number" min="0" step="1000" value="200000" />
+            </div>
+            <div>
+              <label>Durée du crédit (années)</label>
+              <input id="loanYears" type="number" min="1" step="1" value="20" />
+            </div>
+            <div>
+              <label>Taux d’intérêt (%)</label>
+              <input id="loanRate" type="number" min="0" step="0.1" value="2.5" />
+            </div>
+          </div>
+
+          <div class="note" style="padding-top:0;">
+            Crédit ON : achat initial = <b>apport + crédit</b> au prix de l’année 1, puis affichage d’une <b>courbe comparatif</b>.
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="fillDefaultsBtn" type="button">Remplir tableau (défaut)</button>
+          <button id="resetBtn" type="button">Réinitialiser</button>
+        </div>
+
+        <div class="note">
+          <b>Tableau annuel</b> : tu peux saisir <b>prix de la part</b> et <b>taux de distribution</b> pour chaque année.
+          Les dividendes sont calculés mensuellement sur les <b>parts en jouissance uniquement</b>.
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="yearGrid" id="yearGrid"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Outputs -->
+    <section class="rightSide">
+
+      <section class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="kpiTab">Synthèse</div>
+          <div class="tab" data-tab="detailsTab">Détails</div>
+          <div class="tab" data-tab="exitTab">Valeur de sortie</div>
+          <div class="tab" data-tab="tableTab">Tableau annuel</div>
+        </div>
+
+        <!-- KPI TAB -->
+        <div class="tabContent active" id="kpiTab">
+          <div class="kpis">
+            <div class="kpi">
+              <div class="t">Valorisation totale</div>
+              <div class="v accent" id="k_total">—</div>
+              <div class="s">Valeur des parts + cash (dividendes cash si OFF + reliquats)</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Investissement cumulé</div>
+              <div class="v" id="k_invested">—</div>
+              <div class="s">Capital initial + virements mensuels</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Dividendes cumulés</div>
+              <div class="v good" id="k_divTotal">—</div>
+              <div class="s">Inclut dividendes réinvestis et/ou versés en cash</div>
+            </div>
+            <div class="kpi">
+              <div class="t">Valeur des parts (toutes)</div>
+              <div class="v" id="k_partsValue">—</div>
+              <div class="s">Parts en jouissance + parts en attente</div>
+            </div>
+          </div>
+
+          <div class="charts">
+            <div class="chartCard">
+              <div class="chartTitle">Investissement cumulé vs Valorisation totale</div>
+              <canvas id="chartMain" height="220"></canvas>
+            </div>
+
+            <div class="chartCard" id="chartDivWrap">
+              <div class="chartTitle">Dividendes cumulés (cash) — visible si réinvestissement OFF</div>
+              <canvas id="chartDiv" height="180"></canvas>
+            </div>
+
+            <!-- Comparatif crédit -->
+            <div class="chartCard" id="compareWrap" style="display:none;">
+              <div class="chartTitle">Comparatif (si crédit ON) : Comptant (valeur totale) vs Crédit (valeur nette)</div>
+              <canvas id="chartCompare" height="220"></canvas>
+
+              <div class="foot" style="padding:8px 0 0;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <span>Parts achetées au départ : <b id="loanStartPartsOut">—</b></span>
+                  <span>Montant investi au départ : <b id="loanStartInvestOut">—</b></span>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
+                  <span>Mensualité (hors assurance) : <b id="loanMonthlyOut">—</b></span>
+                  <span>Intérêts payés (cumul) : <b id="loanInterestOut">—</b></span>
+                  <span>Capital restant dû (fin) : <b id="loanRemainOut">—</b></span>
+                </div>
+                <div style="margin-top:6px;">
+                  Valeur nette (crédit) = valeur des parts + cash − capital restant dû.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="foot">
+            Astuce : passe le <b>réinvestissement OFF</b> pour voir le <b>cash dividendes</b> monter.
+          </div>
+        </div>
+
+        <!-- DETAILS TAB -->
+        <div class="tabContent" id="detailsTab">
+          <div class="split">
+            <div class="block">
+              <h3>Investissement cumulé</h3>
+              <div class="lines">
+                <div class="line"><span>Capital initial + virements mensuels</span><b id="d_invested">—</b></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <h3>Dividendes cumulés</h3>
+              <div class="lines">
+                <div class="line"><span>Inclut réinvestis et/ou cash</span><b class="good" id="d_divTotal">—</b></div>
+                <div class="line"><span>Cash (dividendes non réinvestis)</span><b id="d_cash">—</b></div>
+              </div>
+              <div class="foot">
+                Le cash augmente <b>uniquement</b> si le réinvestissement est <b>OFF</b>.
+              </div>
+            </div>
+
+            <div class="block">
+              <h3>Valeur des parts (toutes)</h3>
+              <div class="lines">
+                <div class="line"><span>Parts en jouissance + parts en attente</span><b id="d_partsCount">—</b></div>
+                <div class="line"><span>Valeur des parts (toutes)</span><b id="d_partsValue">—</b></div>
+              </div>
+            </div>
+
+            <div class="block">
+              <h3>Parts en jouissance</h3>
+              <div class="lines">
+                <div class="line"><span>Parts en jouissance</span><b id="d_inService">—</b></div>
+                <div class="line"><span>Valeur parts en jouissance</span><b id="d_inServiceValue">—</b></div>
+              </div>
+              <div class="foot">
+                <b>Seules</b> ces parts servent au calcul des dividendes.
+              </div>
+            </div>
+
+            <div class="block" style="grid-column: 1 / -1;">
+              <h3>Valorisation totale</h3>
+              <div class="lines">
+                <div class="line">
+                  <span>Valeur des parts + cash</span>
+                  <b class="accent" id="d_total">—</b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXIT TAB -->
+        <div class="tabContent" id="exitTab">
+          <div class="body" style="padding:12px;">
+            <div class="kpis" style="padding:0;">
+              <div class="kpi">
+                <div class="t">Valeur des parts (toutes)</div>
+                <div class="v" id="x_partsValue">—</div>
+                <div class="s">Parts en jouissance + parts en attente</div>
+              </div>
+
+              <div class="kpi">
+                <div class="label">Valeur de sortie</div>
+                <div class="v accent" id="x_exitValue">—</div>
+              </div>
+            </div>
+
+            <div class="note" style="padding:10px 0 0;">
+              Ici on applique une décote/frais de sortie de <b>10%</b> sur la <b>valeur des parts</b> (cash non inclus).
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLE TAB -->
+        <div class="tabContent" id="tableTab">
+          <div class="body" style="padding:12px;">
+            <div style="overflow:auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Année</th>
+                    <th>Prix part</th>
+                    <th>Taux dist.</th>
+                    <th>Parts totales</th>
+                    <th>En jouissance</th>
+                    <th>En attente</th>
+                    <th>Dividendes année</th>
+                    <th>Cash fin</th>
+                    <th>Valeur parts fin</th>
+                    <th>Valorisation fin</th>
+                  </tr>
+                </thead>
+                <tbody id="yearTable"></tbody>
+              </table>
+            </div>
+            <div class="note">
+              “Dividendes année” = dividendes générés sur l’année (même s’ils ont été réinvestis).
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </section>
+  </div>
+</main>
+
+<script>
+  // ---------- Helpers ----------
+  const fmtEUR = (n) => {
+    if (!isFinite(n)) return "—";
+    return new Intl.NumberFormat("fr-FR", { style:"currency", currency:"EUR", maximumFractionDigits: 0 }).format(n);
+  };
+  const fmtNum = (n, d=2) => {
+    if (!isFinite(n)) return "—";
+    return new Intl.NumberFormat("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }).format(n);
+  };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const el = (id) => document.getElementById(id);
+
+  // ---------- State / DOM ----------
+  const yearGrid = el("yearGrid");
+  const yearTable = el("yearTable");
+  const reinvestToggle = el("reinvestToggle");
+  const reinvestState = el("reinvestState");
+
+  const loanToggle = el("loanToggle");
+  const loanState = el("loanState");
+  const creditBox = el("creditBox");
+  const compareWrap = el("compareWrap");
+
+  // pour redraw canvas comparatif
+  let __lastCompare = null;
+
+  function updateReinvestBadge(){
+    reinvestState.textContent = reinvestToggle.checked ? "ON" : "OFF";
+    reinvestState.style.borderColor = reinvestToggle.checked ? "rgba(102,242,194,.45)" : "rgba(255,213,138,.55)";
+  }
+
+  function updateLoanUI(){
+    const on = loanToggle.checked;
+    loanState.textContent = on ? "ON" : "OFF";
+    loanState.style.borderColor = on ? "rgba(95,227,255,.55)" : "rgba(255,213,138,.55)";
+    creditBox.classList.toggle("show", on);
+    if (!on && compareWrap) compareWrap.style.display = "none";
+  }
+
+  function makeYearRow(i, year){
+    const wrap = document.createElement("div");
+    wrap.className = "yearCard";
+    wrap.dataset.index = i;
+
+    wrap.innerHTML = `
+      <div class="head">
+        <b>Année ${i+1} <span class="small muted">(${year})</span></b>
+        <span class="badge">Prix & Taux</span>
+      </div>
+      <div class="yearInputs">
+        <div>
+          <label>Prix de la part (€)</label>
+          <input type="number" min="0" step="1" class="partPrice" value="1000" />
+        </div>
+        <div>
+          <label>Taux de distribution annuel (%)</label>
+          <input type="number" min="0" step="0.01" class="distRate" value="6.00" />
+        </div>
+      </div>
+    `;
+    return wrap;
+  }
+
+  function rebuildYearGrid(){
+    const yrs = clamp(parseInt(el("years").value || "1", 10), 1, 100);
+    const startY = parseInt(el("startYear").value || "2026", 10);
+
+    yearGrid.innerHTML = "";
+    for (let i=0;i<yrs;i++){
+      yearGrid.appendChild(makeYearRow(i, startY + i));
+    }
+  }
+
+  function fillDefaults(){
+    const startPrice = 600;
+    const baseRate = 6.00;
+    [...yearGrid.querySelectorAll(".yearCard")].forEach((card, i) => {
+      const price = Math.round(startPrice * Math.pow(1.02, i));
+      card.querySelector(".partPrice").value = price;
+      card.querySelector(".distRate").value = baseRate.toFixed(2);
+    });
+  }
+
+  function resetAll(){
+    el("years").value = 10;
+    el("initial").value = 10000;
+    el("monthly").value = 300;
+    el("startYear").value = 2026;
+    el("jouissanceDelay").value = 6;
+    el("initialCash").value = 0;
+    el("fractional").value = "yes";
+    reinvestToggle.checked = true;
+
+    loanToggle.checked = false;
+    el("loanAmount").value = 200000;
+    el("loanYears").value = 20;
+    el("loanRate").value = 2.5;
+
+    updateReinvestBadge();
+    updateLoanUI();
+    rebuildYearGrid();
+    fillDefaults();
+    run();
+  }
+
+  // ---------- Charts ----------
+  function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
+    if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    const cssW = canvas.clientWidth || 600;
+    const cssH = canvas.height || 220;
+
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const W = cssW, H = cssH;
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 62, padR = 14, padT = 16, padB = 30;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const all = seriesA.concat(seriesB);
+    const minV = opts.zeroBase ? 0 : Math.min(...all);
+    const maxV = Math.max(...all);
+    const range = (maxV - minV) || 1;
+
+    const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
+    const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
+
+    const ticks = 5;
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "rgba(255,255,255,.62)";
+    ctx.font = "11px system-ui";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let i=0; i<=ticks; i++){
+      const t = i / ticks;
+      const val = minV + (1 - t) * range;
+      const yy = padT + t * plotH;
+
+      ctx.beginPath();
+      ctx.moveTo(padL, yy);
+      ctx.lineTo(padL + plotW, yy);
+      ctx.stroke();
+
+      ctx.fillText(
+        new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
+        padL - 8,
+        yy
+      );
+    }
+
+    // Série A (ambre)
+    ctx.strokeStyle = "rgba(255,213,138,.95)";
+    ctx.lineWidth = 2;
+    ctx.beginf;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(seriesA[0]));
+    for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
+    ctx.stroke();
+
+    // Série B (cyan)
+    ctx.strokeStyle = "rgba(95,227,255,.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(seriesB[0]));
+    for (let i=1; i<seriesB.length; i++) ctx.lineTo(x(i), y(seriesB[i]));
+    ctx.stroke();
+  }
+
+  function drawLineChart(canvas, values, opts = {}){
+    if (!canvas || !values || values.length < 2) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+
+    const cssW = canvas.clientWidth || 600;
+    const cssH = canvas.height || 180;
+
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const W = cssW, H = cssH;
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 62, padR = 14, padT = 14, padB = 28;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
+
+    const minV = opts.zeroBase ? 0 : Math.min(...values);
+    const maxV = Math.max(...values);
+    const range = (maxV - minV) || 1;
+
+    const x = (i) => padL + (i * (plotW / (values.length - 1)));
+    const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
+
+    const ticks = 4;
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "rgba(255,255,255,.62)";
+    ctx.font = "11px system-ui";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+
+    for (let i=0; i<=ticks; i++){
+      const t = i / ticks;
+      const val = minV + (1 - t) * range;
+      const yy = padT + t * plotH;
+
+      ctx.beginPath();
+      ctx.moveTo(padL, yy);
+      ctx.lineTo(padL + plotW, yy);
+      ctx.stroke();
+
+      ctx.fillText(
+        new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
+        padL - 8,
+        yy
+      );
+    }
+
+    ctx.strokeStyle = "rgba(102,242,194,.95)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x(0), y(values[0]));
+    for (let i=1;i<values.length;i++) ctx.lineTo(x(i), y(values[i]));
+    ctx.stroke();
+  }
+
+  function renderCharts(sInvest, sValo, sDivCash, reinvest){
+    drawDualLineChart(el("chartMain"), sInvest, sValo, { zeroBase:true });
+
+    const wrap = el("chartDivWrap");
+    if (wrap) wrap.style.display = reinvest ? "none" : "block";
+    if (!reinvest) drawLineChart(el("chartDiv"), sDivCash, { zeroBase:true });
+  }
+
+  function redrawCompareChart(){
+    const wrap = el("compareWrap");
+    const canvas = el("chartCompare");
+    if (!wrap || !canvas) return;
+    if (wrap.style.display === "none") return;
+    if (!__lastCompare) return;
+    drawDualLineChart(canvas, __lastCompare.comptantValo, __lastCompare.creditNet, { zeroBase:true });
+  }
+
+  // ---------- Core Simulation ----------
+  function readAnnualInputs(){
+    const cards = [...yearGrid.querySelectorAll(".yearCard")];
+    return cards.map((card) => {
+      const price = parseFloat(card.querySelector(".partPrice").value || "0");
+      const rate = parseFloat(card.querySelector(".distRate").value || "0");
+      return { price: Math.max(0, price), ratePct: Math.max(0, rate) };
+    });
+  }
+
+  function buyParts(amountEUR, price, allowFractional){
+    if (price <= 0 || amountEUR <= 0) return { parts: 0, spent: 0, leftover: amountEUR };
+    let parts = amountEUR / price;
+    if (!allowFractional) parts = Math.floor(parts);
+    const spent = parts * price;
+    return { parts, spent, leftover: amountEUR - spent };
+  }
+
+  function calcMonthlyLoan(amount, annualRatePct, years){
+    const n = Math.max(0, Math.round(years * 12));
+    if (n <= 0 || amount <= 0) return 0;
+    const r = Math.max(0, annualRatePct) / 100 / 12;
+    if (r === 0) return amount / n;
+    return amount * (r / (1 - Math.pow(1 + r, -n)));
+  }
+
+  // Simulation crédit (séparée, n'altère pas la partie comptant)
+  function simulateCredit({
+    years, delay, allowFractional, reinvest, annual,
+    initial, monthly, initialCash,
+    loanAmount, loanYears, loanRate
+  }){
+    const months = years * 12;
+
+    let cash = Math.max(0, initialCash);
+    let lots = [];
+
+    let remaining = Math.max(0, loanAmount);
+    const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
+    const loanMonths = Math.max(0, Math.round(loanYears * 12));
+    const rLoan = Math.max(0, loanRate / 100 / 12);
+
+    let interestPaidTotal = 0;
+
+    // ✅ Achat initial = apport + crédit au prix année 1
+    let startParts = 0;
+    let startInvest = 0;
+    {
+      const y0 = annual[0] || {price:0, ratePct:0};
+      const res = buyParts(initial + loanAmount, y0.price, allowFractional);
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
+      cash += res.leftover;
+
+      startParts = res.parts;
+      startInvest = res.spent;
+    }
+
+    const sNet = [];
+    const sValo = [];
+    const sRemain = [];
+
+    function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
+    function partsInService(monthIndex){
+      let s = 0;
+      for (const lot of lots){
+        if (lot.buyMonth + delay <= monthIndex) s += lot.parts;
+      }
+      return s;
+    }
+    function partsTotal(){
+      return lots.reduce((a, l) => a + l.parts, 0);
+    }
+
+    for (let m=0; m<months; m++){
+      const y = currentYearIndex(m);
+
+      const priceVal = annual[y]?.price ?? 0;
+      const ratePct  = annual[y]?.ratePct ?? 0;
+
+      const priceBuy = (y === 0)
+        ? (annual[0]?.price ?? 0)
+        : (annual[y - 1]?.price ?? 0);
+
+      // ✅ Amortissement : on cumule les intérêts
+      if (remaining > 0 && m < loanMonths && loanPay > 0){
+        const interest = remaining * rLoan;
+        const principal = Math.max(0, loanPay - interest);
+        interestPaidTotal += interest;
+        remaining = Math.max(0, remaining - principal);
+      }
+
+      // Versement mensuel (comme comptant)
+      if (monthly > 0){
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
+
+      // Dividendes (mêmes règles ON/OFF)
+      const inService = partsInService(m);
+      const monthlyRate = (ratePct / 100) / 12;
+      const divThisMonth = inService * priceVal * monthlyRate;
+
+      if (divThisMonth > 0){
+        if (reinvest){
+          const res = buyParts(divThisMonth, priceBuy, allowFractional);
+          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+          cash += res.leftover;
+        } else {
+          cash += divThisMonth;
+        }
+      }
+
+      const pAllNow = partsTotal();
+      const partsValueNow = pAllNow * priceVal;
+      const valoNow = partsValueNow + cash;
+      const netNow = valoNow - remaining;
+
+      sValo.push(valoNow);
+      sNet.push(netNow);
+      sRemain.push(remaining);
+    }
+
+    return {
+      sNet, sValo, sRemain,
+      loanPay,
+      interestPaidTotal,
+      remainingEnd: remaining,
+      startParts,
+      startInvest
+    };
+  }
+
+  function run(){
+    updateReinvestBadge();
+    updateLoanUI();
+
+    const years = clamp(parseInt(el("years").value || "1", 10), 1, 100);
+    const initial = Math.max(0, parseFloat(el("initial").value || "0"));
+    const monthly = Math.max(0, parseFloat(el("monthly").value || "0"));
+    const delay = clamp(parseInt(el("jouissanceDelay").value || "0", 10), 0, 120);
+    const allowFractional = el("fractional").value === "yes";
+    const reinvest = reinvestToggle.checked;
+    let cash = Math.max(0, parseFloat(el("initialCash").value || "0"));
+
+    const annual = readAnnualInputs();
+    const months = years * 12;
+
+    let lots = [];
+    let invested = initial;
+
+    // Achat initial (comptant)
+    {
+      const y0 = annual[0] || {price:0, ratePct:0};
+      const res = buyParts(initial, y0.price, allowFractional);
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
+      cash += res.leftover;
+    }
+
+    let divTotal = 0;
+    let cashDivOnly = 0;
+
+    let sInvest = [];
+    let sValo = [];
+    let sDivCash = [];
+
+    const perYear = Array.from({length: years}, (_, i) => ({
+      yearIndex: i,
+      price: annual[i]?.price ?? 0,
+      ratePct: annual[i]?.ratePct ?? 0,
+      divYear: 0,
+      endCash: 0,
+      endPartsValue: 0,
+      endTotal: 0,
+      endPartsAll: 0,
+      endInService: 0,
+      endPending: 0
+    }));
+
+    function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
+
+    function partsInService(monthIndex){
+      let s = 0;
+      for (const lot of lots){
+        if (lot.buyMonth + delay <= monthIndex) s += lot.parts;
+      }
+      return s;
+    }
+    function partsTotal(){
+      return lots.reduce((a, l) => a + l.parts, 0);
+    }
+
+    for (let m=0; m<months; m++){
+      const y = currentYearIndex(m);
+
+      const priceVal = annual[y]?.price ?? 0;
+      const ratePct  = annual[y]?.ratePct ?? 0;
+
+      const priceBuy = (y === 0)
+        ? (annual[0]?.price ?? 0)
+        : (annual[y - 1]?.price ?? 0);
+
+      if (monthly > 0){
+        invested += monthly;
+        const res = buyParts(monthly, priceBuy, allowFractional);
+        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+        cash += res.leftover;
+      }
+
+      const inService = partsInService(m);
+      const monthlyRate = (ratePct / 100) / 12;
+      const divThisMonth = inService * priceVal * monthlyRate;
+
+      if (divThisMonth > 0){
+        divTotal += divThisMonth;
+        perYear[y].divYear += divThisMonth;
+
+        if (reinvest){
+          const res = buyParts(divThisMonth, priceBuy, allowFractional);
+          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
+          cash += res.leftover;
+        } else {
+          cash += divThisMonth;
+          cashDivOnly += divThisMonth;
+        }
+      }
+
+      const pAllNow = partsTotal();
+      const partsValueNow = pAllNow * priceVal;
+      const valoNow = partsValueNow + cash;
+
+      sInvest.push(invested);
+      sValo.push(valoNow);
+      sDivCash.push(cashDivOnly);
+
+      if ((m % 12) === 11){
+        const yy = currentYearIndex(m);
+        const pAll = partsTotal();
+        const pIn = partsInService(m);
+        const pPend = Math.max(0, pAll - pIn);
+
+        const partsValue = pAll * (annual[yy]?.price ?? 0);
+        const totalValue = partsValue + cash;
+
+        perYear[yy].endCash = cash;
+        perYear[yy].endPartsValue = partsValue;
+        perYear[yy].endTotal = totalValue;
+        perYear[yy].endPartsAll = pAll;
+        perYear[yy].endInService = pIn;
+        perYear[yy].endPending = pPend;
+      }
+    }
+
+    const lastYearIdx = years - 1;
+    const lastPrice = annual[lastYearIdx]?.price ?? 0;
+
+    const pAll = partsTotal();
+    const pIn = partsInService(months - 1);
+
+    const partsValueAll = pAll * lastPrice;
+    const inServiceValue = pIn * lastPrice;
+
+    const totalValueWanted = partsValueAll + cash;
+
+    // KPIs
+    el("k_total").textContent = fmtEUR(totalValueWanted);
+    el("k_invested").textContent = fmtEUR(invested);
+    el("k_divTotal").textContent = fmtEUR(divTotal);
+    el("k_partsValue").textContent = fmtEUR(partsValueAll);
+
+    // Exit
+    const exitValue = partsValueAll * 0.90;
+    el("x_partsValue").textContent = fmtEUR(partsValueAll);
+    el("x_exitValue").textContent = fmtEUR(exitValue);
+
+    // Details
+    el("d_total").textContent = fmtEUR(totalValueWanted);
+    el("d_invested").textContent = fmtEUR(invested);
+    el("d_divTotal").textContent = fmtEUR(divTotal);
+    el("d_cash").textContent = fmtEUR(reinvest ? 0 : cashDivOnly);
+    el("d_partsCount").textContent = `${fmtNum(pAll, 2)} parts (toutes)`;
+    el("d_partsValue").textContent = fmtEUR(partsValueAll);
+    el("d_inService").textContent = `${fmtNum(pIn, 2)} parts`;
+    el("d_inServiceValue").textContent = fmtEUR(inServiceValue);
+
+    // Annual table
+    yearTable.innerHTML = "";
+    const startY = parseInt(el("startYear").value || "2026", 10);
+    perYear.forEach((r, i) => {
+      const year = startY + i;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${year}</td>
+        <td>${fmtEUR(annual[i]?.price ?? 0)}</td>
+        <td>${fmtNum(annual[i]?.ratePct ?? 0,2)}%</td>
+        <td>${fmtNum(r.endPartsAll,2)}</td>
+        <td>${fmtNum(r.endInService,2)}</td>
+        <td>${fmtNum(r.endPending,2)}</td>
+        <td>${fmtEUR(r.divYear)}</td>
+        <td>${fmtEUR(r.endCash)}</td>
+        <td>${fmtEUR(r.endPartsValue)}</td>
+        <td>${fmtEUR(r.endTotal)}</td>
+      `;
+      yearTable.appendChild(tr);
+    });
+
+    // Charts comptant
+    renderCharts(sInvest, sValo, sDivCash, reinvest);
+
+    // Crédit
+    if (loanToggle.checked){
+      const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
+      const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
+      const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
+
+      const credit = simulateCredit({
+        years, delay, allowFractional, reinvest, annual,
+        initial, monthly,
+        initialCash: Math.max(0, parseFloat(el("initialCash").value || "0")),
+        loanAmount, loanYears, loanRate
+      });
+
+      compareWrap.style.display = "block";
+
+      __lastCompare = { comptantValo: sValo, creditNet: credit.sNet };
+
+      el("loanStartPartsOut").textContent = `${fmtNum(credit.startParts || 0, 2)} parts`;
+      el("loanStartInvestOut").textContent = fmtEUR(credit.startInvest || 0);
+      el("loanMonthlyOut").textContent = fmtEUR(credit.loanPay || 0);
+      el("loanInterestOut").textContent = fmtEUR(credit.interestPaidTotal || 0);
+      el("loanRemainOut").textContent = fmtEUR(credit.remainingEnd || 0);
+
+      requestAnimationFrame(redrawCompareChart);
+    } else {
+      compareWrap.style.display = "none";
+      __lastCompare = null;
+    }
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll(".tab").forEach(t => {
+    t.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+      document.querySelectorAll(".tabContent").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      el(t.dataset.tab).classList.add("active");
+      if (t.dataset.tab === "kpiTab") requestAnimationFrame(redrawCompareChart);
+    });
+  });
+
+  // ---------- Events ----------
+  reinvestToggle.addEventListener("change", () => { updateReinvestBadge(); run(); });
+  loanToggle.addEventListener("change", () => { updateLoanUI(); run(); });
+
+  el("runBtn").addEventListener("click", run);
+
+  ["years","initial","monthly","startYear","jouissanceDelay","fractional","initialCash"].forEach(id => {
+    el(id).addEventListener("change", () => {
+      if (id === "years" || id === "startYear") rebuildYearGrid();
+      run();
+    });
+    el(id).addEventListener("input", () => {
+      if (id === "years" || id === "startYear") rebuildYearGrid();
+      run();
+    });
+  });
+
+  ["loanAmount","loanYears","loanRate"].forEach(id => {
+    el(id).addEventListener("input", run);
+    el(id).addEventListener("change", run);
+  });
+
+  el("fillDefaultsBtn").addEventListener("click", () => { fillDefaults(); run(); });
+  el("resetBtn").addEventListener("click", resetAll);
+
+  yearGrid.addEventListener("input", (e) => {
+    if (e.target.classList.contains("partPrice") || e.target.classList.contains("distRate")) run();
+  });
+
+  // Init
+  updateReinvestBadge();
+  updateLoanUI();
+  rebuildYearGrid();
+  fillDefaults();
+  run();
+</script>
+</body>
+</html>
