@@ -244,7 +244,6 @@
       line-height: 1.35;
     }
 
-    /* Charts */
     .charts{
       padding: 0 12px 12px;
       display:grid;
@@ -270,7 +269,6 @@
       background: rgba(255,255,255,.03);
     }
 
-    /* Crédit */
     .creditBox{display:none;}
     .creditBox.show{display:block;}
   </style>
@@ -302,7 +300,6 @@
 <main>
   <div class="wrap grid">
 
-    <!-- LEFT: Inputs -->
     <section class="card">
       <h2>Paramètres</h2>
       <div class="body">
@@ -342,8 +339,7 @@
           </div>
         </div>
 
-        <!-- Crédit -->
-        <div class="pill" style="margin: 2px 0 10px;" title="Active l'option crédit. Si OFF, le simulateur reste exactement identique.">
+        <div class="pill" style="margin: 2px 0 10px;" title="Crédit ON : le montant du crédit est investi au démarrage (achat de parts année 1) + mensualités payées ensuite.">
           <input id="loanToggle" type="checkbox" />
           <span>Acheter à crédit</span>
           <span id="loanState" class="badge">OFF</span>
@@ -366,7 +362,7 @@
           </div>
 
           <div class="note" style="padding-top:0;">
-            Crédit ON : achat initial = <b>apport + crédit</b> au prix de l’année 1.
+            Crédit ON : <b>le crédit est investi au démarrage</b> (achat de parts au prix de l’année 1). Mensualités ensuite.
           </div>
         </div>
 
@@ -385,7 +381,6 @@
       </div>
     </section>
 
-    <!-- RIGHT: Outputs -->
     <section class="rightSide">
       <section class="card">
         <div class="tabs">
@@ -395,13 +390,12 @@
           <div class="tab" data-tab="tableTab">Tableau annuel</div>
         </div>
 
-        <!-- KPI TAB -->
         <div class="tabContent active" id="kpiTab">
           <div class="kpis">
             <div class="kpi">
               <div class="t">Valorisation totale</div>
               <div class="v accent" id="k_total">—</div>
-              <div class="s">Valeur des parts + cash (dividendes cash si OFF + reliquats)</div>
+              <div class="s">Valeur des parts + cash</div>
             </div>
             <div class="kpi">
               <div class="t">Investissement cumulé</div>
@@ -437,7 +431,7 @@
 
               <div class="foot" style="padding:8px 0 0;">
                 <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                  <span>Parts achetées au départ : <b id="loanStartPartsOut">—</b></span>
+                  <span>Parts achetées au départ (avec crédit) : <b id="loanStartPartsOut">—</b></span>
                   <span>Montant investi au départ : <b id="loanStartInvestOut">—</b></span>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:6px;">
@@ -457,7 +451,6 @@
           </div>
         </div>
 
-        <!-- DETAILS TAB -->
         <div class="tabContent" id="detailsTab">
           <div class="split">
             <div class="block">
@@ -509,7 +502,6 @@
           </div>
         </div>
 
-        <!-- EXIT TAB -->
         <div class="tabContent" id="exitTab">
           <div class="body" style="padding:12px;">
             <div class="kpis" style="padding:0;">
@@ -531,7 +523,6 @@
           </div>
         </div>
 
-        <!-- TABLE TAB -->
         <div class="tabContent" id="tableTab">
           <div class="body" style="padding:12px;">
             <div style="overflow:auto;">
@@ -846,41 +837,29 @@
   }){
     const months = years * 12;
 
+    // CASH = cash initial (séparé). Le crédit est investi au démarrage (achat de parts)
     let cash = Math.max(0, initialCash);
-    cash += loanAmount;
     let lots = [];
-    // ACHAT INITIAL AVEC CASH (cash initial + crédit)
-if (cash > 0) {
-  const sharePriceNow = getSharePriceForYear(startYear); // adapte si tu as déjà une fonction
-  const canFraction = (fractional === "yes");
 
-  let qty = canFraction ? (cash / sharePriceNow) : Math.floor(cash / sharePriceNow);
-
-  if (qty > 0) {
-    lots.push({ qty, price: sharePriceNow, year: startYear }); // adapte les champs si besoin
-    cash -= qty * sharePriceNow;
-  }
-}
-
-
-    let remaining = Math.max(0, loanAmount);
-    const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
-    const loanMonths = Math.max(0, Math.round(loanYears * 12));
-    const rLoan = Math.max(0, loanRate / 100 / 12);
-
-    let interestPaidTotal = 0;
-
-    // Achat initial (apport + crédit) au prix année 1
+    // Achat initial : capital initial + crédit (investi immédiatement au prix de l’année 1)
     let startParts = 0;
     let startInvest = 0;
     {
       const y0 = annual[0] || {price:0, ratePct:0};
-      const res = buyParts(initial + loanAmount, y0.price, allowFractional);
-      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
-      cash += res.leftover;
+      const budget = Math.max(0, initial) + Math.max(0, loanAmount);
+      const res = buyParts(budget, y0.price, allowFractional);
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 }); // délai jouissance appliqué plus tard
+      cash += res.leftover; // reliquat
       startParts = res.parts;
       startInvest = res.spent;
     }
+
+    // Crédit : capital restant dû + mensualité
+    let remaining = Math.max(0, loanAmount);
+    const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
+    const loanMonths = Math.max(0, Math.round(loanYears * 12));
+    const rLoan = Math.max(0, loanRate / 100 / 12);
+    let interestPaidTotal = 0;
 
     const sNet = [];
     const sValo = [];
@@ -903,27 +882,28 @@ if (cash > 0) {
       const priceVal = annual[y]?.price ?? 0;
       const ratePct  = annual[y]?.ratePct ?? 0;
 
+      // prix d’achat = prix de l’année précédente (comme ton simulateur comptant)
       const priceBuy = (y === 0)
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
-      // Paiement crédit (déduit du cash) + amortissement (principal / intérêt)
+      // Paiement mensualité (sortie cash) + calcul intérêt/principal pour le restant dû
       if (remaining > 0 && m < loanMonths && loanPay > 0){
         const interest = remaining * rLoan;
         const principal = Math.max(0, loanPay - interest);
         interestPaidTotal += interest;
         remaining = Math.max(0, remaining - principal);
-        cash -= loanPay; // ✅ IMPORTANT (sinon crédit “gratuit”)
+        cash -= loanPay; // mensualité payée
       }
 
-      // virements mensuels (mêmes règles)
+      // Virement mensuel : achète des parts (sinon reliquat en cash)
       if (monthly > 0){
         const res = buyParts(monthly, priceBuy, allowFractional);
         if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
         cash += res.leftover;
       }
 
-      // dividendes
+      // Dividendes sur parts en jouissance
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -973,9 +953,9 @@ if (cash > 0) {
     const months = years * 12;
 
     let lots = [];
-    let invested = initial;
+    let invested = initial; // (on conserve ta définition : initial + virements)
 
-    // Achat initial comptant
+    // Achat initial comptant (capital initial seulement)
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial, y0.price, allowFractional);
@@ -990,7 +970,7 @@ if (cash > 0) {
     let sValo = [];
     let sDivCash = [];
 
-    const perYear = Array.from({length: years}, (_, i) => ({
+    const perYear = Array.from({length: years}, () => ({
       divYear: 0,
       endCash: 0,
       endPartsValue: 0,
@@ -1201,11 +1181,8 @@ if (cash > 0) {
   fillDefaults();
   run();
 
-  // bonus : redraw chart au resize
   window.addEventListener("resize", () => {
-    requestAnimationFrame(() => {
-      run();
-    });
+    requestAnimationFrame(() => run());
   });
 </script>
 </body>
