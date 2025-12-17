@@ -674,58 +674,75 @@
     run();
   }
 
-  // ---------- Charts ----------
-  function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
-    if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
-    const ctx = canvas.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
+function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
+  if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
 
-    const cssW = canvas.clientWidth || 600;
-    const cssH = canvas.height || 220;
+  const cssW = canvas.clientWidth || 600;
+  const cssH = canvas.height || 220;
 
-    canvas.width = Math.floor(cssW * dpr);
-    canvas.height = Math.floor(cssH * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas.width = Math.floor(cssW * dpr);
+  canvas.height = Math.floor(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    const W = cssW, H = cssH;
-    ctx.clearRect(0, 0, W, H);
+  const W = cssW, H = cssH;
+  ctx.clearRect(0, 0, W, H);
 
-    const padL = 62, padR = 14, padT = 16, padB = 30;
-    const plotW = W - padL - padR;
-    const plotH = H - padT - padB;
+  const padL = 62, padR = 14, padT = 16, padB = 30;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
 
-    const all = seriesA.concat(seriesB);
-    const minV = opts.zeroBase ? 0 : Math.min(...all);
-    const maxV = Math.max(...all);
-    const range = (maxV - minV) || 1;
+  const all = seriesA.concat(seriesB);
+  const minV = opts.zeroBase ? 0 : Math.min(...all);
+  const maxV = Math.max(...all);
+  const range = (maxV - minV) || 1;
 
-    const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
-    const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
+  const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
+  const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
 
-    const ticks = 5;
-    ctx.strokeStyle = "rgba(255,255,255,.10)";
-    ctx.lineWidth = 1;
-    ctx.fillStyle = "rgba(255,255,255,.62)";
-    ctx.font = "11px system-ui";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
+  const ticks = 5;
+  ctx.strokeStyle = "rgba(255,255,255,.10)";
+  ctx.lineWidth = 1;
+  ctx.fillStyle = "rgba(255,255,255,.62)";
+  ctx.font = "11px system-ui";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "middle";
 
-    for (let i=0; i<=ticks; i++){
-      const t = i / ticks;
-      const val = minV + (1 - t) * range;
-      const yy = padT + t * plotH;
+  for (let i=0; i<=ticks; i++){
+    const t = i / ticks;
+    const val = minV + (1 - t) * range;
+    const yy = padT + t * plotH;
 
-      ctx.beginPath();
-      ctx.moveTo(padL, yy);
-      ctx.lineTo(padL + plotW, yy);
-      ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(padL, yy);
+    ctx.lineTo(padL + plotW, yy);
+    ctx.stroke();
 
-      ctx.fillText(
-        new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
-        padL - 8,
-        yy
-      );
-    }
+    ctx.fillText(
+      new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
+      padL - 8,
+      yy
+    );
+  }
+
+  // Série A (ambre)
+  ctx.strokeStyle = "rgba(255,213,138,.95)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(seriesA[0]));
+  for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
+  ctx.stroke();
+
+  // Série B (cyan)
+  ctx.strokeStyle = "rgba(95,227,255,.95)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(seriesB[0]));
+  for (let i=1; i<seriesB.length; i++) ctx.lineTo(x(i), y(seriesB[i]));
+  ctx.stroke();
+}
+
 
     // Série A (ambre)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
