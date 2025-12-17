@@ -366,7 +366,7 @@
           </div>
 
           <div class="note" style="padding-top:0;">
-            Crédit ON : achat initial = <b>apport + crédit</b> au prix de l’année 1, puis affichage d’une <b>courbe comparatif</b>.
+            Crédit ON : achat initial = <b>apport + crédit</b> au prix de l’année 1.
           </div>
         </div>
 
@@ -381,14 +381,12 @@
         </div>
 
         <div style="height:10px"></div>
-
         <div class="yearGrid" id="yearGrid"></div>
       </div>
     </section>
 
     <!-- RIGHT: Outputs -->
     <section class="rightSide">
-
       <section class="card">
         <div class="tabs">
           <div class="tab active" data-tab="kpiTab">Synthèse</div>
@@ -433,7 +431,6 @@
               <canvas id="chartDiv" height="180"></canvas>
             </div>
 
-            <!-- Comparatif crédit -->
             <div class="chartCard" id="compareWrap" style="display:none;">
               <div class="chartTitle">Comparatif (si crédit ON) : Comptant (valeur totale) vs Crédit (valeur nette)</div>
               <canvas id="chartCompare" height="220"></canvas>
@@ -563,7 +560,6 @@
         </div>
 
       </section>
-
     </section>
   </div>
 </main>
@@ -592,7 +588,6 @@
   const creditBox = el("creditBox");
   const compareWrap = el("compareWrap");
 
-  // pour redraw canvas comparatif
   let __lastCompare = null;
 
   function updateReinvestBadge(){
@@ -674,86 +669,66 @@
     run();
   }
 
-function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
-  if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
-  const ctx = canvas.getContext("2d");
-  const dpr = window.devicePixelRatio || 1;
+  // ---------- Charts ----------
+  function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
+    if (!canvas || !seriesA || !seriesB || seriesA.length < 2 || seriesB.length < 2) return;
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
 
-  const cssW = canvas.clientWidth || 600;
-  const cssH = canvas.height || 220;
+    const cssW = canvas.clientWidth || 600;
+    const cssH = canvas.height || 220;
 
-  canvas.width = Math.floor(cssW * dpr);
-  canvas.height = Math.floor(cssH * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvas.width = Math.floor(cssW * dpr);
+    canvas.height = Math.floor(cssH * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const W = cssW, H = cssH;
-  ctx.clearRect(0, 0, W, H);
+    const W = cssW, H = cssH;
+    ctx.clearRect(0, 0, W, H);
 
-  const padL = 62, padR = 14, padT = 16, padB = 30;
-  const plotW = W - padL - padR;
-  const plotH = H - padT - padB;
+    const padL = 62, padR = 14, padT = 16, padB = 30;
+    const plotW = W - padL - padR;
+    const plotH = H - padT - padB;
 
-  const all = seriesA.concat(seriesB);
-  const minV = opts.zeroBase ? 0 : Math.min(...all);
-  const maxV = Math.max(...all);
-  const range = (maxV - minV) || 1;
+    const all = seriesA.concat(seriesB);
+    const minV = opts.zeroBase ? 0 : Math.min(...all);
+    const maxV = Math.max(...all);
+    const range = (maxV - minV) || 1;
 
-  const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
-  const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
+    const x = (i) => padL + (i * (plotW / (seriesA.length - 1)));
+    const y = (v) => padT + (plotH - ((v - minV) / range) * plotH);
 
-  const ticks = 5;
-  ctx.strokeStyle = "rgba(255,255,255,.10)";
-  ctx.lineWidth = 1;
-  ctx.fillStyle = "rgba(255,255,255,.62)";
-  ctx.font = "11px system-ui";
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
+    const ticks = 5;
+    ctx.strokeStyle = "rgba(255,255,255,.10)";
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "rgba(255,255,255,.62)";
+    ctx.font = "11px system-ui";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
 
-  for (let i=0; i<=ticks; i++){
-    const t = i / ticks;
-    const val = minV + (1 - t) * range;
-    const yy = padT + t * plotH;
+    for (let i=0; i<=ticks; i++){
+      const t = i / ticks;
+      const val = minV + (1 - t) * range;
+      const yy = padT + t * plotH;
 
-    ctx.beginPath();
-    ctx.moveTo(padL, yy);
-    ctx.lineTo(padL + plotW, yy);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(padL, yy);
+      ctx.lineTo(padL + plotW, yy);
+      ctx.stroke();
 
-    ctx.fillText(
-      new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
-      padL - 8,
-      yy
-    );
-  }
+      ctx.fillText(
+        new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(val),
+        padL - 8,
+        yy
+      );
+    }
 
-  // Série A (ambre)
-  ctx.strokeStyle = "rgba(255,213,138,.95)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x(0), y(seriesA[0]));
-  for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
-  ctx.stroke();
-
-  // Série B (cyan)
-  ctx.strokeStyle = "rgba(95,227,255,.95)";
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(x(0), y(seriesB[0]));
-  for (let i=1; i<seriesB.length; i++) ctx.lineTo(x(i), y(seriesB[i]));
-  ctx.stroke();
-}
-
-
-    // Série A (ambre)
     ctx.strokeStyle = "rgba(255,213,138,.95)";
     ctx.lineWidth = 2;
-    ctx.beginf;
     ctx.beginPath();
     ctx.moveTo(x(0), y(seriesA[0]));
     for (let i=1; i<seriesA.length; i++) ctx.lineTo(x(i), y(seriesA[i]));
     ctx.stroke();
 
-    // Série B (cyan)
     ctx.strokeStyle = "rgba(95,227,255,.95)";
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -838,7 +813,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     drawDualLineChart(canvas, __lastCompare.comptantValo, __lastCompare.creditNet, { zeroBase:true });
   }
 
-  // ---------- Core Simulation ----------
+  // ---------- Simulation ----------
   function readAnnualInputs(){
     const cards = [...yearGrid.querySelectorAll(".yearCard")];
     return cards.map((card) => {
@@ -864,7 +839,6 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     return amount * (r / (1 - Math.pow(1 + r, -n)));
   }
 
-  // Simulation crédit (séparée, n'altère pas la partie comptant)
   function simulateCredit({
     years, delay, allowFractional, reinvest, annual,
     initial, monthly, initialCash,
@@ -882,7 +856,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
 
     let interestPaidTotal = 0;
 
-    // ✅ Achat initial = apport + crédit au prix année 1
+    // Achat initial (apport + crédit) au prix année 1
     let startParts = 0;
     let startInvest = 0;
     {
@@ -890,14 +864,12 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
       const res = buyParts(initial + loanAmount, y0.price, allowFractional);
       if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
       cash += res.leftover;
-
       startParts = res.parts;
       startInvest = res.spent;
     }
 
     const sNet = [];
     const sValo = [];
-    const sRemain = [];
 
     function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
     function partsInService(monthIndex){
@@ -921,22 +893,23 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
-      // ✅ Amortissement : on cumule les intérêts
+      // Paiement crédit (déduit du cash) + amortissement (principal / intérêt)
       if (remaining > 0 && m < loanMonths && loanPay > 0){
         const interest = remaining * rLoan;
         const principal = Math.max(0, loanPay - interest);
         interestPaidTotal += interest;
         remaining = Math.max(0, remaining - principal);
+        cash -= loanPay; // ✅ IMPORTANT (sinon crédit “gratuit”)
       }
 
-      // Versement mensuel (comme comptant)
+      // virements mensuels (mêmes règles)
       if (monthly > 0){
         const res = buyParts(monthly, priceBuy, allowFractional);
         if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
         cash += res.leftover;
       }
 
-      // Dividendes (mêmes règles ON/OFF)
+      // dividendes
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -958,11 +931,10 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
 
       sValo.push(valoNow);
       sNet.push(netNow);
-      sRemain.push(remaining);
     }
 
     return {
-      sNet, sValo, sRemain,
+      sNet, sValo,
       loanPay,
       interestPaidTotal,
       remainingEnd: remaining,
@@ -989,7 +961,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     let lots = [];
     let invested = initial;
 
-    // Achat initial (comptant)
+    // Achat initial comptant
     {
       const y0 = annual[0] || {price:0, ratePct:0};
       const res = buyParts(initial, y0.price, allowFractional);
@@ -1005,9 +977,6 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     let sDivCash = [];
 
     const perYear = Array.from({length: years}, (_, i) => ({
-      yearIndex: i,
-      price: annual[i]?.price ?? 0,
-      ratePct: annual[i]?.ratePct ?? 0,
       divYear: 0,
       endCash: 0,
       endPartsValue: 0,
@@ -1018,7 +987,6 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     }));
 
     function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
-
     function partsInService(monthIndex){
       let s = 0;
       for (const lot of lots){
@@ -1026,9 +994,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
       }
       return s;
     }
-    function partsTotal(){
-      return lots.reduce((a, l) => a + l.parts, 0);
-    }
+    function partsTotal(){ return lots.reduce((a, l) => a + l.parts, 0); }
 
     for (let m=0; m<months; m++){
       const y = currentYearIndex(m);
@@ -1099,7 +1065,6 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
 
     const partsValueAll = pAll * lastPrice;
     const inServiceValue = pIn * lastPrice;
-
     const totalValueWanted = partsValueAll + cash;
 
     // KPIs
@@ -1109,9 +1074,8 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
 
     // Exit
-    const exitValue = partsValueAll * 0.90;
     el("x_partsValue").textContent = fmtEUR(partsValueAll);
-    el("x_exitValue").textContent = fmtEUR(exitValue);
+    el("x_exitValue").textContent = fmtEUR(partsValueAll * 0.90);
 
     // Details
     el("d_total").textContent = fmtEUR(totalValueWanted);
@@ -1161,7 +1125,6 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
       });
 
       compareWrap.style.display = "block";
-
       __lastCompare = { comptantValo: sValo, creditNet: credit.sNet };
 
       el("loanStartPartsOut").textContent = `${fmtNum(credit.startParts || 0, 2)} parts`;
@@ -1177,7 +1140,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     }
   }
 
-  // ---------- Tabs ----------
+  // Tabs
   document.querySelectorAll(".tab").forEach(t => {
     t.addEventListener("click", () => {
       document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
@@ -1188,7 +1151,7 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
     });
   });
 
-  // ---------- Events ----------
+  // Events
   reinvestToggle.addEventListener("change", () => { updateReinvestBadge(); run(); });
   loanToggle.addEventListener("change", () => { updateLoanUI(); run(); });
 
@@ -1223,6 +1186,13 @@ function drawDualLineChart(canvas, seriesA, seriesB, opts = {}){
   rebuildYearGrid();
   fillDefaults();
   run();
+
+  // bonus : redraw chart au resize
+  window.addEventListener("resize", () => {
+    requestAnimationFrame(() => {
+      run();
+    });
+  });
 </script>
 </body>
 </html>
