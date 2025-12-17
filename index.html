@@ -300,6 +300,7 @@
 <main>
   <div class="wrap grid">
 
+    <!-- LEFT -->
     <section class="card">
       <h2>Paramètres</h2>
       <div class="body">
@@ -339,7 +340,8 @@
           </div>
         </div>
 
-        <div class="pill" style="margin: 2px 0 10px;" title="Crédit ON : le montant du crédit est investi au démarrage (achat de parts année 1) + mensualités payées ensuite.">
+        <!-- Crédit -->
+        <div class="pill" style="margin: 2px 0 10px;" title="Crédit ON : crédit investi au démarrage (achat de parts année 1), mensualités payées ensuite.">
           <input id="loanToggle" type="checkbox" />
           <span>Acheter à crédit</span>
           <span id="loanState" class="badge">OFF</span>
@@ -362,7 +364,7 @@
           </div>
 
           <div class="note" style="padding-top:0;">
-            Crédit ON : <b>le crédit est investi au démarrage</b> (achat de parts au prix de l’année 1). Mensualités ensuite.
+            Crédit ON : <b>le crédit est investi au démarrage</b> (achat au prix de l’année 1). <b>Délai jouissance</b> appliqué.
           </div>
         </div>
 
@@ -381,6 +383,7 @@
       </div>
     </section>
 
+    <!-- RIGHT -->
     <section class="rightSide">
       <section class="card">
         <div class="tabs">
@@ -393,9 +396,9 @@
         <div class="tabContent active" id="kpiTab">
           <div class="kpis">
             <div class="kpi">
-              <div class="t">Valorisation totale</div>
+              <div class="t" id="k_total_label">Valorisation totale</div>
               <div class="v accent" id="k_total">—</div>
-              <div class="s">Valeur des parts + cash</div>
+              <div class="s" id="k_total_sub">Valeur des parts + cash</div>
             </div>
             <div class="kpi">
               <div class="t">Investissement cumulé</div>
@@ -416,7 +419,7 @@
 
           <div class="charts">
             <div class="chartCard">
-              <div class="chartTitle">Investissement cumulé vs Valorisation totale</div>
+              <div class="chartTitle" id="chartMainTitle">Investissement cumulé vs Valorisation totale</div>
               <canvas id="chartMain" height="220"></canvas>
             </div>
 
@@ -426,7 +429,7 @@
             </div>
 
             <div class="chartCard" id="compareWrap" style="display:none;">
-              <div class="chartTitle">Comparatif (si crédit ON) : Comptant (valeur totale) vs Crédit (valeur nette)</div>
+              <div class="chartTitle">Comparatif : Comptant (valeur totale) vs Crédit (valeur nette)</div>
               <canvas id="chartCompare" height="220"></canvas>
 
               <div class="foot" style="padding:8px 0 0;">
@@ -446,7 +449,7 @@
             </div>
           </div>
 
-          <div class="foot">
+          <div class="foot" id="kpiFoot">
             Astuce : passe le <b>réinvestissement OFF</b> pour voir le <b>cash dividendes</b> monter.
           </div>
         </div>
@@ -491,13 +494,14 @@
             </div>
 
             <div class="block" style="grid-column: 1 / -1;">
-              <h3>Valorisation totale</h3>
+              <h3>Valorisation</h3>
               <div class="lines">
                 <div class="line">
-                  <span>Valeur des parts + cash</span>
+                  <span id="d_total_label">Valeur des parts + cash</span>
                   <b class="accent" id="d_total">—</b>
                 </div>
               </div>
+              <div class="foot" id="d_total_sub"></div>
             </div>
           </div>
         </div>
@@ -518,7 +522,7 @@
             </div>
 
             <div class="note" style="padding:10px 0 0;">
-              Ici on applique une décote/frais de sortie de <b>10%</b> sur la <b>valeur des parts</b> (cash non inclus).
+              Décote/frais de sortie : <b>10%</b> sur la <b>valeur des parts</b> (cash non inclus).
             </div>
           </div>
         </div>
@@ -544,7 +548,7 @@
                 <tbody id="yearTable"></tbody>
               </table>
             </div>
-            <div class="note">
+            <div class="note" id="tableNote">
               “Dividendes année” = dividendes générés sur l’année (même s’ils ont été réinvestis).
             </div>
           </div>
@@ -568,7 +572,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const el = (id) => document.getElementById(id);
 
-  // ---------- State / DOM ----------
+  // ---------- DOM ----------
   const yearGrid = el("yearGrid");
   const yearTable = el("yearTable");
   const reinvestToggle = el("reinvestToggle");
@@ -804,7 +808,7 @@
     drawDualLineChart(canvas, __lastCompare.comptantValo, __lastCompare.creditNet, { zeroBase:true });
   }
 
-  // ---------- Simulation ----------
+  // ---------- Core math ----------
   function readAnnualInputs(){
     const cards = [...yearGrid.querySelectorAll(".yearCard")];
     return cards.map((card) => {
@@ -830,145 +834,43 @@
     return amount * (r / (1 - Math.pow(1 + r, -n)));
   }
 
-  function simulateCredit({
+  function buildScenario({
     years, delay, allowFractional, reinvest, annual,
     initial, monthly, initialCash,
-    loanAmount, loanYears, loanRate
+    loanOn, loanAmount, loanYears, loanRate
   }){
     const months = years * 12;
 
-    // CASH = cash initial (séparé). Le crédit est investi au démarrage (achat de parts)
     let cash = Math.max(0, initialCash);
     let lots = [];
+    let invested = initial;     // définition inchangée (capital + virements)
+    let divTotal = 0;
+    let cashDivOnly = 0;
 
-    // Achat initial : capital initial + crédit (investi immédiatement au prix de l’année 1)
+    // Crédit
+    let remaining = loanOn ? Math.max(0, loanAmount) : 0;
+    const loanPay = loanOn ? calcMonthlyLoan(remaining, loanRate, loanYears) : 0;
+    const loanMonths = loanOn ? Math.max(0, Math.round(loanYears * 12)) : 0;
+    const rLoan = loanOn ? Math.max(0, loanRate / 100 / 12) : 0;
+    let interestPaidTotal = 0;
+
+    // Achat initial : si crédit ON -> initial + loanAmount, sinon initial
     let startParts = 0;
     let startInvest = 0;
     {
       const y0 = annual[0] || {price:0, ratePct:0};
-      const budget = Math.max(0, initial) + Math.max(0, loanAmount);
+      const budget = loanOn ? (initial + loanAmount) : initial;
       const res = buyParts(budget, y0.price, allowFractional);
-      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 }); // délai jouissance appliqué plus tard
-      cash += res.leftover; // reliquat
+      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
+      cash += res.leftover;
       startParts = res.parts;
       startInvest = res.spent;
     }
 
-    // Crédit : capital restant dû + mensualité
-    let remaining = Math.max(0, loanAmount);
-    const loanPay = calcMonthlyLoan(remaining, loanRate, loanYears);
-    const loanMonths = Math.max(0, Math.round(loanYears * 12));
-    const rLoan = Math.max(0, loanRate / 100 / 12);
-    let interestPaidTotal = 0;
-
-    const sNet = [];
+    const sInvest = [];
     const sValo = [];
-
-    function currentYearIndex(m){ return Math.min(years-1, Math.floor(m/12)); }
-    function partsInService(monthIndex){
-      let s = 0;
-      for (const lot of lots){
-        if (lot.buyMonth + delay <= monthIndex) s += lot.parts;
-      }
-      return s;
-    }
-    function partsTotal(){
-      return lots.reduce((a, l) => a + l.parts, 0);
-    }
-
-    for (let m=0; m<months; m++){
-      const y = currentYearIndex(m);
-
-      const priceVal = annual[y]?.price ?? 0;
-      const ratePct  = annual[y]?.ratePct ?? 0;
-
-      // prix d’achat = prix de l’année précédente (comme ton simulateur comptant)
-      const priceBuy = (y === 0)
-        ? (annual[0]?.price ?? 0)
-        : (annual[y - 1]?.price ?? 0);
-
-      // Paiement mensualité (sortie cash) + calcul intérêt/principal pour le restant dû
-      if (remaining > 0 && m < loanMonths && loanPay > 0){
-        const interest = remaining * rLoan;
-        const principal = Math.max(0, loanPay - interest);
-        interestPaidTotal += interest;
-        remaining = Math.max(0, remaining - principal);
-        cash -= loanPay; // mensualité payée
-      }
-
-      // Virement mensuel : achète des parts (sinon reliquat en cash)
-      if (monthly > 0){
-        const res = buyParts(monthly, priceBuy, allowFractional);
-        if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-        cash += res.leftover;
-      }
-
-      // Dividendes sur parts en jouissance
-      const inService = partsInService(m);
-      const monthlyRate = (ratePct / 100) / 12;
-      const divThisMonth = inService * priceVal * monthlyRate;
-
-      if (divThisMonth > 0){
-        if (reinvest){
-          const res = buyParts(divThisMonth, priceBuy, allowFractional);
-          if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: m });
-          cash += res.leftover;
-        } else {
-          cash += divThisMonth;
-        }
-      }
-
-      const pAllNow = partsTotal();
-      const partsValueNow = pAllNow * priceVal;
-      const valoNow = partsValueNow + cash;
-      const netNow = valoNow - remaining;
-
-      sValo.push(valoNow);
-      sNet.push(netNow);
-    }
-
-    return {
-      sNet, sValo,
-      loanPay,
-      interestPaidTotal,
-      remainingEnd: remaining,
-      startParts,
-      startInvest
-    };
-  }
-
-  function run(){
-    updateReinvestBadge();
-    updateLoanUI();
-
-    const years = clamp(parseInt(el("years").value || "1", 10), 1, 100);
-    const initial = Math.max(0, parseFloat(el("initial").value || "0"));
-    const monthly = Math.max(0, parseFloat(el("monthly").value || "0"));
-    const delay = clamp(parseInt(el("jouissanceDelay").value || "0", 10), 0, 120);
-    const allowFractional = el("fractional").value === "yes";
-    const reinvest = reinvestToggle.checked;
-    let cash = Math.max(0, parseFloat(el("initialCash").value || "0"));
-
-    const annual = readAnnualInputs();
-    const months = years * 12;
-
-    let lots = [];
-    let invested = initial; // (on conserve ta définition : initial + virements)
-
-    // Achat initial comptant (capital initial seulement)
-    {
-      const y0 = annual[0] || {price:0, ratePct:0};
-      const res = buyParts(initial, y0.price, allowFractional);
-      if (res.parts > 0) lots.push({ parts: res.parts, buyMonth: 0 });
-      cash += res.leftover;
-    }
-
-    let divTotal = 0;
-    let cashDivOnly = 0;
-
-    let sInvest = [];
-    let sValo = [];
-    let sDivCash = [];
+    const sDivCash = [];
+    const sNet = []; // utile si crédit ON
 
     const perYear = Array.from({length: years}, () => ({
       divYear: 0,
@@ -1000,6 +902,16 @@
         ? (annual[0]?.price ?? 0)
         : (annual[y - 1]?.price ?? 0);
 
+      // mensualité crédit
+      if (loanOn && remaining > 0 && m < loanMonths && loanPay > 0){
+        const interest = remaining * rLoan;
+        const principal = Math.max(0, loanPay - interest);
+        interestPaidTotal += interest;
+        remaining = Math.max(0, remaining - principal);
+        cash -= loanPay;
+      }
+
+      // virements mensuels
       if (monthly > 0){
         invested += monthly;
         const res = buyParts(monthly, priceBuy, allowFractional);
@@ -1007,6 +919,7 @@
         cash += res.leftover;
       }
 
+      // dividendes
       const inService = partsInService(m);
       const monthlyRate = (ratePct / 100) / 12;
       const divThisMonth = inService * priceVal * monthlyRate;
@@ -1033,6 +946,9 @@
       sValo.push(valoNow);
       sDivCash.push(cashDivOnly);
 
+      const netNow = valoNow - (loanOn ? remaining : 0);
+      sNet.push(netNow);
+
       if ((m % 12) === 11){
         const yy = currentYearIndex(m);
         const pAll = partsTotal();
@@ -1051,20 +967,100 @@
       }
     }
 
+    const endValo = sValo.length ? sValo[sValo.length - 1] : 0;
+    const endNet  = sNet.length  ? sNet[sNet.length - 1]  : 0;
+
+    return {
+      lots,
+      invested,
+      divTotal,
+      cashDivOnly,
+      cashEnd: cash,
+      remainingEnd: remaining,
+      interestPaidTotal,
+      loanPay,
+      startParts,
+      startInvest,
+      sInvest,
+      sValo,
+      sDivCash,
+      sNet,
+      perYear,
+      endValo,
+      endNet
+    };
+  }
+
+  // ---------- UI run ----------
+  function run(){
+    updateReinvestBadge();
+    updateLoanUI();
+
+    const years = clamp(parseInt(el("years").value || "1", 10), 1, 100);
+    const initial = Math.max(0, parseFloat(el("initial").value || "0"));
+    const monthly = Math.max(0, parseFloat(el("monthly").value || "0"));
+    const delay = clamp(parseInt(el("jouissanceDelay").value || "0", 10), 0, 120);
+    const allowFractional = el("fractional").value === "yes";
+    const reinvest = reinvestToggle.checked;
+    const initialCash = Math.max(0, parseFloat(el("initialCash").value || "0"));
+    const annual = readAnnualInputs();
+    const months = years * 12;
+
+    const loanOn = loanToggle.checked;
+    const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
+    const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
+    const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
+
+    // Scénario comptant (toujours calculé pour le comparatif)
+    const comptant = buildScenario({
+      years, delay, allowFractional, reinvest, annual,
+      initial, monthly, initialCash,
+      loanOn: false, loanAmount: 0, loanYears: 0, loanRate: 0
+    });
+
+    // Scénario affiché
+    const shown = loanOn
+      ? buildScenario({
+          years, delay, allowFractional, reinvest, annual,
+          initial, monthly, initialCash,
+          loanOn: true, loanAmount, loanYears, loanRate
+        })
+      : comptant;
+
+    // ---------- KPIs (affichent TOUJOURS le scénario "shown") ----------
     const lastYearIdx = years - 1;
     const lastPrice = annual[lastYearIdx]?.price ?? 0;
 
-    const pAll = partsTotal();
-    const pIn = partsInService(months - 1);
+    const pAll = shown.lots.reduce((a, l) => a + l.parts, 0);
+    const pIn = (() => {
+      let s = 0;
+      for (const lot of shown.lots){
+        if (lot.buyMonth + delay <= (months - 1)) s += lot.parts;
+      }
+      return s;
+    })();
 
     const partsValueAll = pAll * lastPrice;
     const inServiceValue = pIn * lastPrice;
-    const totalValueWanted = partsValueAll + cash;
 
-    // KPIs
-    el("k_total").textContent = fmtEUR(totalValueWanted);
-    el("k_invested").textContent = fmtEUR(invested);
-    el("k_divTotal").textContent = fmtEUR(divTotal);
+    if (loanOn){
+      el("k_total_label").textContent = "Valorisation nette (crédit)";
+      el("k_total_sub").textContent = "Valeur des parts + cash − capital restant dû";
+      el("k_total").textContent = fmtEUR(shown.endNet);
+      el("chartMainTitle").textContent = "Investissement cumulé vs Valeur nette (crédit)";
+      el("d_total_label").textContent = "Valeur nette (crédit)";
+      el("d_total_sub").textContent = "Valeur nette = valeur des parts + cash − capital restant dû.";
+    } else {
+      el("k_total_label").textContent = "Valorisation totale";
+      el("k_total_sub").textContent = "Valeur des parts + cash";
+      el("k_total").textContent = fmtEUR(shown.endValo);
+      el("chartMainTitle").textContent = "Investissement cumulé vs Valorisation totale";
+      el("d_total_label").textContent = "Valeur des parts + cash";
+      el("d_total_sub").textContent = "";
+    }
+
+    el("k_invested").textContent = fmtEUR(shown.invested);
+    el("k_divTotal").textContent = fmtEUR(shown.divTotal);
     el("k_partsValue").textContent = fmtEUR(partsValueAll);
 
     // Exit
@@ -1072,21 +1068,25 @@
     el("x_exitValue").textContent = fmtEUR(partsValueAll * 0.90);
 
     // Details
-    el("d_total").textContent = fmtEUR(totalValueWanted);
-    el("d_invested").textContent = fmtEUR(invested);
-    el("d_divTotal").textContent = fmtEUR(divTotal);
-    el("d_cash").textContent = fmtEUR(reinvest ? 0 : cashDivOnly);
+    el("d_invested").textContent = fmtEUR(shown.invested);
+    el("d_divTotal").textContent = fmtEUR(shown.divTotal);
+    el("d_cash").textContent = fmtEUR(reinvest ? 0 : shown.cashDivOnly);
     el("d_partsCount").textContent = `${fmtNum(pAll, 2)} parts (toutes)`;
     el("d_partsValue").textContent = fmtEUR(partsValueAll);
     el("d_inService").textContent = `${fmtNum(pIn, 2)} parts`;
     el("d_inServiceValue").textContent = fmtEUR(inServiceValue);
+    el("d_total").textContent = loanOn ? fmtEUR(shown.endNet) : fmtEUR(shown.endValo);
 
-    // Annual table
+    // ---------- Table annuelle (scénario shown) ----------
     yearTable.innerHTML = "";
     const startY = parseInt(el("startYear").value || "2026", 10);
-    perYear.forEach((r, i) => {
+
+    shown.perYear.forEach((r, i) => {
       const year = startY + i;
       const tr = document.createElement("tr");
+      const partsValue = r.endPartsValue;
+      const totalShown = loanOn ? (r.endTotal - (i === years-1 ? shown.remainingEnd : 0)) : r.endTotal;
+
       tr.innerHTML = `
         <td>${year}</td>
         <td>${fmtEUR(annual[i]?.price ?? 0)}</td>
@@ -1096,36 +1096,29 @@
         <td>${fmtNum(r.endPending,2)}</td>
         <td>${fmtEUR(r.divYear)}</td>
         <td>${fmtEUR(r.endCash)}</td>
-        <td>${fmtEUR(r.endPartsValue)}</td>
-        <td>${fmtEUR(r.endTotal)}</td>
+        <td>${fmtEUR(partsValue)}</td>
+        <td>${fmtEUR(loanOn ? (r.endTotal - shown.remainingEnd) : r.endTotal)}</td>
       `;
       yearTable.appendChild(tr);
     });
 
-    // Charts comptant
-    renderCharts(sInvest, sValo, sDivCash, reinvest);
+    // ---------- Charts ----------
+    if (loanOn){
+      renderCharts(shown.sInvest, shown.sNet, shown.sDivCash, reinvest);
+    } else {
+      renderCharts(shown.sInvest, shown.sValo, shown.sDivCash, reinvest);
+    }
 
-    // Crédit
-    if (loanToggle.checked){
-      const loanAmount = Math.max(0, parseFloat(el("loanAmount").value || "0"));
-      const loanYears  = Math.max(0, parseFloat(el("loanYears").value || "0"));
-      const loanRate   = Math.max(0, parseFloat(el("loanRate").value || "0"));
-
-      const credit = simulateCredit({
-        years, delay, allowFractional, reinvest, annual,
-        initial, monthly,
-        initialCash: Math.max(0, parseFloat(el("initialCash").value || "0")),
-        loanAmount, loanYears, loanRate
-      });
-
+    // ---------- Comparatif ----------
+    if (loanOn){
       compareWrap.style.display = "block";
-      __lastCompare = { comptantValo: sValo, creditNet: credit.sNet };
+      __lastCompare = { comptantValo: comptant.sValo, creditNet: shown.sNet };
 
-      el("loanStartPartsOut").textContent = `${fmtNum(credit.startParts || 0, 2)} parts`;
-      el("loanStartInvestOut").textContent = fmtEUR(credit.startInvest || 0);
-      el("loanMonthlyOut").textContent = fmtEUR(credit.loanPay || 0);
-      el("loanInterestOut").textContent = fmtEUR(credit.interestPaidTotal || 0);
-      el("loanRemainOut").textContent = fmtEUR(credit.remainingEnd || 0);
+      el("loanStartPartsOut").textContent = `${fmtNum(shown.startParts || 0, 2)} parts`;
+      el("loanStartInvestOut").textContent = fmtEUR(shown.startInvest || 0);
+      el("loanMonthlyOut").textContent = fmtEUR(shown.loanPay || 0);
+      el("loanInterestOut").textContent = fmtEUR(shown.interestPaidTotal || 0);
+      el("loanRemainOut").textContent = fmtEUR(shown.remainingEnd || 0);
 
       requestAnimationFrame(redrawCompareChart);
     } else {
